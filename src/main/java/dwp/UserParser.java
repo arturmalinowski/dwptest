@@ -3,8 +3,9 @@ package dwp;
 import com.google.gson.Gson;
 import dwp.configuration.DwpProperties;
 import dwp.domain.User;
-import org.apache.http.client.methods.HttpGet;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.util.Arrays;
@@ -24,21 +25,25 @@ public class UserParser {
         this.properties = properties;
     }
 
-    public String getUsersInLondon() {
-        HttpGet httpGet = new HttpGet(properties.getLondonUsersUrl());
+    public ResponseEntity<String> getUsersInLondon() {
+        ResponseEntity<String> response = requestSender.send(properties.getLondonUsersUrl());
 
-        return requestSender.send(httpGet);
+        if(response.getStatusCode().equals(HttpStatus.OK)) {
+            return response;
+        }
+        throw new RuntimeException("Request failed.");
     }
 
-    public String getUsersNearbyLondon() {
-        HttpGet httpGet = new HttpGet(properties.getNearbyUsersUrl());
-        String response = requestSender.send(httpGet);
+    public ResponseEntity<String> getUsersNearbyLondon() {
+        ResponseEntity<String> response = requestSender.send(properties.getNearbyUsersUrl());
+        if(response.getStatusCode().equals(HttpStatus.OK)) {
+            User[] usersArray = GSON.fromJson(response.getBody(), User[].class);
 
-        User[] usersArray = GSON.fromJson(response, User[].class);
+            List<User> users = Arrays.stream(usersArray).filter(this::isNearbyLondon).collect(Collectors.toList());
 
-        List<User> users = Arrays.stream(usersArray).filter(this::isNearbyLondon).collect(Collectors.toList());
-
-        return GSON.toJson(users);
+            return new ResponseEntity<>(GSON.toJson(users), HttpStatus.OK);
+        }
+        throw new RuntimeException("Request failed.");
     }
 
     private boolean isNearbyLondon(User user) {

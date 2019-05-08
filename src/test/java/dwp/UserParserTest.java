@@ -3,6 +3,14 @@ package dwp;
 import dwp.configuration.DwpProperties;
 import org.junit.Before;
 import org.junit.Test;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+
+import java.io.File;
+import java.io.IOException;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
@@ -12,44 +20,9 @@ import static org.mockito.Mockito.when;
 
 public class UserParserTest {
 
-    private static final String SINGLE_USER_RESPONSE = "{\n" +
-            "    \"id\": 135,\n" +
-            "    \"first_name\": \"Mechelle\",\n" +
-            "    \"last_name\": \"Boam\",\n" +
-            "    \"email\": \"mboam3q@thetimes.co.uk\",\n" +
-            "    \"ip_address\": \"113.71.242.187\",\n" +
-            "    \"latitude\": -6.5115909,\n" +
-            "    \"longitude\": 105.652983\n" +
-            "  }";
-    private static final String MULTIPLE_USERS_RESPONSE = "[\n" +
-            "  {\n" +
-            "    \"id\": 135,\n" +
-            "    \"first_name\": \"Mechelle\",\n" +
-            "    \"last_name\": \"Boam\",\n" +
-            "    \"email\": \"mboam3q@thetimes.co.uk\",\n" +
-            "    \"ip_address\": \"113.71.242.187\",\n" +
-            "    \"latitude\": -6.5115909,\n" +
-            "    \"longitude\": 195.652983\n" +
-            "  },\n" +
-            "  {\n" +
-            "    \"id\": 688,\n" +
-            "    \"first_name\": \"Tiffi\",\n" +
-            "    \"last_name\": \"Colbertson\",\n" +
-            "    \"email\": \"tcolbertsonj3@vimeo.com\",\n" +
-            "    \"ip_address\": \"141.49.93.0\",\n" +
-            "    \"latitude\": 37.13,\n" +
-            "    \"longitude\": -84.08\n" +
-            "  } " +
-            "]";
-    private static final String EXPECTED_RESPONSE = "[{" +
-            "\"id\":\"688\"," +
-            "\"first_name\":\"Tiffi\"," +
-            "\"last_name\":\"Colbertson\"," +
-            "\"email\":\"tcolbertsonj3@vimeo.com\"," +
-            "\"ip_address\":\"141.49.93.0\"," +
-            "\"latitude\":37.13," +
-            "\"longitude\":-84.08" +
-            "}]";
+    private final String SINGLE_USER_RESPONSE = getStringFrom("json/single_user_response.json");
+    private final String MULTIPLE_USERS_RESPONSE = getStringFrom("json/multiple_users_response.json");
+    private final String EXPECTED_RESPONSE = getStringFrom("json/expected_response.json");
     private static final String SOME_URL = "SOME_URL";
 
     private UserParser underTest;
@@ -66,21 +39,54 @@ public class UserParserTest {
 
     @Test
     public void canGetUsersInLondon() {
-        when(requestSender.send(any())).thenReturn(SINGLE_USER_RESPONSE);
+        when(requestSender.send(any())).thenReturn(new ResponseEntity<>(SINGLE_USER_RESPONSE, HttpStatus.OK));
         when(properties.getLondonUsersUrl()).thenReturn(SOME_URL);
 
-        String response = underTest.getUsersInLondon();
+        ResponseEntity<String> response = underTest.getUsersInLondon();
 
-        assertThat(response, is(SINGLE_USER_RESPONSE));
+        assertThat(response.getBody(), is(SINGLE_USER_RESPONSE));
     }
 
     @Test
     public void canGetUsersNearbyLondon() {
-        when(requestSender.send(any())).thenReturn(MULTIPLE_USERS_RESPONSE);
+        when(requestSender.send(any())).thenReturn(new ResponseEntity<>(MULTIPLE_USERS_RESPONSE, HttpStatus.OK));
         when(properties.getNearbyUsersUrl()).thenReturn(SOME_URL);
 
-        String response = underTest.getUsersNearbyLondon();
+        ResponseEntity<String> response = underTest.getUsersNearbyLondon();
 
-        assertThat(response, is(EXPECTED_RESPONSE));
+        assertThat(response.getBody(), is(EXPECTED_RESPONSE));
+    }
+
+    @Test(expected = RuntimeException.class)
+    public void throwsExceptionWhenCouldntGetResponseForUsersInLondon() {
+        when(requestSender.send(any())).thenReturn(new ResponseEntity<>("", HttpStatus.BAD_REQUEST));
+        when(properties.getNearbyUsersUrl()).thenReturn(SOME_URL);
+
+        underTest.getUsersNearbyLondon();
+    }
+
+    @Test(expected = RuntimeException.class)
+    public void throwsExceptionWhenCouldntGetResponseForUsersNearby() {
+        when(requestSender.send(any())).thenReturn(new ResponseEntity<>("", HttpStatus.BAD_REQUEST));
+        when(properties.getLondonUsersUrl()).thenReturn(SOME_URL);
+
+        underTest.getUsersInLondon();
+    }
+
+    private String getStringFrom(String fileName) {
+        ClassLoader classLoader = getClass().getClassLoader();
+
+        URL resource = classLoader.getResource(fileName);
+        String fileString = "";
+        if (resource == null) {
+            throw new IllegalArgumentException("file is not found!");
+        } else {
+            try {
+                fileString = new String(Files.readAllBytes(new File(resource.getFile()).toPath()), StandardCharsets.UTF_8);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            return fileString;
+        }
     }
 }

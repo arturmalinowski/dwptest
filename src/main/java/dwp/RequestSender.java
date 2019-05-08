@@ -1,37 +1,21 @@
 package dwp;
 
-import org.apache.http.HttpResponse;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.util.EntityUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-
-import java.io.IOException;
-import java.util.logging.Logger;
+import org.springframework.web.client.RestTemplate;
 
 @Service
 public class RequestSender {
 
-    private final static Logger LOGGER = Logger.getLogger(RequestSender.class.getName());
-
-    private final HttpClient httpClient;
+    private final RestTemplate restTemplate;
 
     @Autowired
-    public RequestSender(HttpClient httpClient) {
-        this.httpClient = httpClient;
+    public RequestSender(RestTemplate restTemplate) {
+        this.restTemplate = restTemplate;
     }
 
-    String send(HttpGet request) {
-        String response = "";
-
-        try {
-            HttpResponse httpResponse = httpClient.execute(request);
-            response = EntityUtils.toString(httpResponse.getEntity());
-        } catch (IOException e) {
-            LOGGER.severe(String.format("Couldn't execute the call: %s", e));
-        }
-
-        return response;
+    ResponseEntity<String> send(String request) {
+        return restTemplate.getForEntity(request, String.class);
     }
 }
