@@ -9,4 +9,9 @@ java -jar dwp-test-1.0-SNAPSHOT.jar
 API endpoints:
 
 /api/nearby
+
+Returns a list of users within 50 miles from London
+
 /api/london/users
+
+Returns a list of users in London
