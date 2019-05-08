@@ -21,7 +21,7 @@ public class UserParserTest {
             "    \"latitude\": -6.5115909,\n" +
             "    \"longitude\": 105.652983\n" +
             "  }";
-    private static final String MULTILE_USERS_RESPONSE = "[\n" +
+    private static final String MULTIPLE_USERS_RESPONSE = "[\n" +
             "  {\n" +
             "    \"id\": 135,\n" +
             "    \"first_name\": \"Mechelle\",\n" +
@@ -50,6 +50,7 @@ public class UserParserTest {
             "\"latitude\":37.13," +
             "\"longitude\":-84.08" +
             "}]";
+    private static final String SOME_URL = "SOME_URL";
 
     private UserParser underTest;
     private RequestSender requestSender;
@@ -66,6 +67,7 @@ public class UserParserTest {
     @Test
     public void canGetUsersInLondon() {
         when(requestSender.send(any())).thenReturn(SINGLE_USER_RESPONSE);
+        when(properties.getLondonUsersUrl()).thenReturn(SOME_URL);
 
         String response = underTest.getUsersInLondon();
 
@@ -74,7 +76,8 @@ public class UserParserTest {
 
     @Test
     public void canGetUsersNearbyLondon() {
-        when(requestSender.send(any())).thenReturn(MULTILE_USERS_RESPONSE);
+        when(requestSender.send(any())).thenReturn(MULTIPLE_USERS_RESPONSE);
+        when(properties.getNearbyUsersUrl()).thenReturn(SOME_URL);
 
         String response = underTest.getUsersNearbyLondon();
 

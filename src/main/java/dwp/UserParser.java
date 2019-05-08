@@ -19,7 +19,7 @@ public class UserParser {
     private final DwpProperties properties;
 
     @Autowired
-    public UserParser(RequestSender requestSender, DwpProperties properties) {
+    UserParser(RequestSender requestSender, DwpProperties properties) {
         this.requestSender = requestSender;
         this.properties = properties;
     }

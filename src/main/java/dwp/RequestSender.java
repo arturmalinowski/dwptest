@@ -22,7 +22,7 @@ public class RequestSender {
         this.httpClient = httpClient;
     }
 
-    public String send(HttpGet request) {
+    String send(HttpGet request) {
         String response = "";
 
         try {
